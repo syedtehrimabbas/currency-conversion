@@ -45,6 +45,7 @@ ext {
     materialVersion= '1.3.0'
     activityKtxVersion= '1.2.0-rc01'
     retrofitVersion = '2.9.0'
+    okhttpGsonVersion = "2.5.0"
     moshiVersion = '1.11.0'
     okhttpInterceptorVersion = '4.9.0'
     mockVersion = '1.10.5'

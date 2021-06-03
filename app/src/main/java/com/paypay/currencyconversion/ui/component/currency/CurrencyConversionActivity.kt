@@ -7,40 +7,41 @@ import androidx.activity.viewModels
 import androidx.lifecycle.LiveData
 import com.google.android.material.snackbar.Snackbar
 import com.paypay.currencyconversion.data.Resource
-import com.paypay.currencyconversion.data.dto.recipes.Currencies
+import com.paypay.currencyconversion.data.dto.currency.CurrenciesRatesResponse
+import com.paypay.currencyconversion.data.dto.currency.CurrenciesResponse
 import com.paypay.currencyconversion.databinding.ActivityCurrencyConversionBinding
 import com.paypay.currencyconversion.ui.base.BaseActivity
 import com.paypay.currencyconversion.utils.*
-import com.paypay.currencyconversion.utils.SingleEvent
 import dagger.hilt.android.AndroidEntryPoint
 
 
 @AndroidEntryPoint
 class CurrencyConversionActivity : BaseActivity() {
     private lateinit var binding: ActivityCurrencyConversionBinding
-
-    private val recipesListViewModel: CurrenciesViewModel by viewModels()
-//    private lateinit var recipesAdapter: RecipesAdapter
+    private val currencyConversionListViewModel: CurrenciesViewModel by viewModels()
 
     override fun initViewBinding() {
         binding = ActivityCurrencyConversionBinding.inflate(layoutInflater)
-        val view = binding.root
-        setContentView(view)
+        setContentView(binding.root)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        recipesListViewModel.getRecipes()
+        currencyConversionListViewModel.loadCurrencies()
+//        currencyConversionListViewModel.loadRates()
     }
 
-    private fun bindListData(recipes: Currencies) {
-        if (false) {
-//            recipesAdapter = RecipesAdapter(recipesListViewModel, recipes.recipesList)
-//            binding.rvRecipesList.adapter = recipesAdapter
+    private fun bindCurrencyAdapter(currenciesResponse: CurrenciesResponse) {
+        if (currenciesResponse.success) {
+            setSpinnerItems(
+                binding.currencyAS,
+                currenciesResponse.currencies.entries.map { "${it.key} - ${it.value}" })
             showDataView(true)
-        } else {
-            showDataView(false)
         }
+    }
+
+    private fun bindRatesAdapter(currenciesRatesResponse: CurrenciesRatesResponse) {
+        showDataView(currenciesRatesResponse.success)
     }
 
     private fun observeSnackBarMessages(event: LiveData<SingleEvent<Any>>) {
@@ -64,20 +65,32 @@ class CurrencyConversionActivity : BaseActivity() {
     }
 
 
-    private fun handleRecipesList(status: Resource<Currencies>) {
+    override fun handleRecipesList(status: Resource<CurrenciesResponse>) {
         when (status) {
             is Resource.Loading -> showLoadingView()
-            is Resource.Success -> status.data?.let { bindListData(recipes = it) }
+            is Resource.Success -> status.data?.let { bindCurrencyAdapter(currenciesResponse = it) }
             is Resource.DataError -> {
                 showDataView(false)
-                status.errorCode?.let { recipesListViewModel.showToastMessage(it) }
+                status.errorCode?.let { currencyConversionListViewModel.showToastMessage(it) }
+            }
+        }
+    }
+
+    override fun handleRates(status: Resource<CurrenciesRatesResponse>) {
+        when (status) {
+            is Resource.Loading -> showLoadingView()
+            is Resource.Success -> status.data?.let { bindRatesAdapter(currenciesRatesResponse = it) }
+            is Resource.DataError -> {
+                showDataView(false)
+                status.errorCode?.let { currencyConversionListViewModel.showToastMessage(it) }
             }
         }
     }
 
     override fun observeViewModel() {
-        observe(recipesListViewModel.recipesLiveData, ::handleRecipesList)
-        observeSnackBarMessages(recipesListViewModel.showSnackBar)
-        observeToast(recipesListViewModel.showToast)
+        observe(currencyConversionListViewModel.currenciesLiveData, ::handleRecipesList)
+        observe(currencyConversionListViewModel.ratesLiveData, ::handleRates)
+        observeSnackBarMessages(currencyConversionListViewModel.showSnackBar)
+        observeToast(currencyConversionListViewModel.showToast)
     }
 }

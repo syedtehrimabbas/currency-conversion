@@ -1,15 +1,12 @@
 package com.paypay.currencyconversion.data.remote
 
-import com.paypay.currencyconversion.BASE_URL
 import com.paypay.currencyconversion.BuildConfig
-import com.paypay.currencyconversion.data.remote.moshiFactories.MyStandardJsonAdapters
-import com.paypay.currencyconversion.data.remote.moshiFactories.MyKotlinJsonAdapterFactory
-import com.squareup.moshi.Moshi
+import com.paypay.currencyconversion.BuildConfig.BASE_URL
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,18 +49,11 @@ class ServiceGenerator @Inject constructor() {
         val client = okHttpBuilder.build()
         retrofit = Retrofit.Builder()
                 .baseUrl(BASE_URL).client(client)
-                .addConverterFactory(MoshiConverterFactory.create(getMoshi()))
+                .addConverterFactory(GsonConverterFactory.create())
                 .build()
     }
 
     fun <S> createService(serviceClass: Class<S>): S {
         return retrofit.create(serviceClass)
-    }
-
-    private fun getMoshi(): Moshi {
-        return Moshi.Builder()
-                .add(MyKotlinJsonAdapterFactory())
-                .add(MyStandardJsonAdapters.FACTORY)
-                .build()
     }
 }

@@ -1,8 +1,10 @@
 package com.paypay.currencyconversion.data.remote
 
 import com.paypay.currencyconversion.data.Resource
-import com.paypay.currencyconversion.data.dto.recipes.Currencies
+import com.paypay.currencyconversion.data.dto.currency.CurrenciesRatesResponse
+import com.paypay.currencyconversion.data.dto.currency.CurrenciesResponse
 
 internal interface RemoteDataSource {
-    suspend fun requestRecipes(): Resource<Currencies>
+    suspend fun currencies(): Resource<CurrenciesResponse>
+    suspend fun rates(): Resource<CurrenciesRatesResponse>
 }

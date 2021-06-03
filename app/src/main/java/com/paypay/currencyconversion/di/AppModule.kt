@@ -1,7 +1,6 @@
 package com.paypay.currencyconversion.di
 
 import android.content.Context
-import com.paypay.currencyconversion.data.local.LocalData
 import com.paypay.currencyconversion.utils.Network
 import com.paypay.currencyconversion.utils.NetworkConnectivity
 import dagger.Module
@@ -18,12 +17,6 @@ import kotlin.coroutines.CoroutineContext
 class AppModule {
     @Provides
     @Singleton
-    fun provideLocalRepository(@ApplicationContext context: Context): LocalData {
-        return LocalData(context)
-    }
-
-    @Provides
-    @Singleton
     fun provideCoroutineContext(): CoroutineContext {
         return Dispatchers.IO
     }
@@ -33,4 +26,5 @@ class AppModule {
     fun provideNetworkConnectivity(@ApplicationContext context: Context): NetworkConnectivity {
         return Network(context)
     }
+
 }

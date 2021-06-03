@@ -6,8 +6,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.paypay.currencyconversion.data.DataRepositorySource
 import com.paypay.currencyconversion.data.Resource
-import com.paypay.currencyconversion.data.dto.recipes.Currencies
-import com.paypay.currencyconversion.data.dto.recipes.RecipesItem
+import com.paypay.currencyconversion.data.dto.currency.CurrenciesRatesResponse
+import com.paypay.currencyconversion.data.dto.currency.CurrenciesResponse
 import com.paypay.currencyconversion.ui.base.BaseViewModel
 import com.paypay.currencyconversion.utils.SingleEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,25 +24,19 @@ constructor(private val dataRepositoryRepository: DataRepositorySource) : BaseVi
      * Data --> LiveData, Exposed as LiveData, Locally in viewModel as MutableLiveData
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val recipesLiveDataPrivate = MutableLiveData<Resource<Currencies>>()
-    val recipesLiveData: LiveData<Resource<Currencies>> get() = recipesLiveDataPrivate
-
-
-    //TODO check to make them as one Resource
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val recipeSearchFoundPrivate: MutableLiveData<RecipesItem> = MutableLiveData()
-    val recipeSearchFound: LiveData<RecipesItem> get() = recipeSearchFoundPrivate
+    val currenciesLiveDataPrivate = MutableLiveData<Resource<CurrenciesResponse>>()
+    val currenciesLiveData: LiveData<Resource<CurrenciesResponse>> get() = currenciesLiveDataPrivate
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val noSearchFoundPrivate: MutableLiveData<Unit> = MutableLiveData()
-    val noSearchFound: LiveData<Unit> get() = noSearchFoundPrivate
+    val ratesLiveDataPrivate = MutableLiveData<Resource<CurrenciesRatesResponse>>()
+    val ratesLiveData: LiveData<Resource<CurrenciesRatesResponse>> get() = ratesLiveDataPrivate
 
     /**
      * UI actions as event, user action is single one time event, Shouldn't be multiple time consumption
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val openRecipeDetailsPrivate = MutableLiveData<SingleEvent<RecipesItem>>()
-    val openRecipeDetails: LiveData<SingleEvent<RecipesItem>> get() = openRecipeDetailsPrivate
+    private val openRecipeDetailsPrivate = MutableLiveData<SingleEvent<CurrenciesResponse>>()
+    val openRecipeDetails: LiveData<SingleEvent<CurrenciesResponse>> get() = openRecipeDetailsPrivate
 
     /**
      * Error handling as UI
@@ -56,11 +50,20 @@ constructor(private val dataRepositoryRepository: DataRepositorySource) : BaseVi
     val showToast: LiveData<SingleEvent<Any>> get() = showToastPrivate
 
 
-    fun getRecipes() {
+    fun loadCurrencies() {
         viewModelScope.launch {
-            recipesLiveDataPrivate.value = Resource.Loading()
-            dataRepositoryRepository.requestRecipes().collect {
-                recipesLiveDataPrivate.value = it
+            currenciesLiveDataPrivate.value = Resource.Loading()
+            dataRepositoryRepository.requestCurrencies().collect {
+                currenciesLiveDataPrivate.value = it
+            }
+        }
+    }
+
+    fun loadRates() {
+        viewModelScope.launch {
+            currenciesLiveDataPrivate.value = Resource.Loading()
+            dataRepositoryRepository.requestCurrenciesRates().collect {
+                ratesLiveDataPrivate.value = it
             }
         }
     }

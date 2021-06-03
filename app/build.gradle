@@ -20,17 +20,35 @@ android {
         versionName "1.0"
         vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += [
+                        "room.schemaLocation":"$projectDir/schemas".toString(),
+                        "room.incremental":"true",
+                        "room.expandProjection":"true"]
+            }
+        }
     }
 
     buildFeatures {
         viewBinding = true
     }
-    buildTypes { debug {
-        debuggable true
-    }
+    buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"${api_endpoint}\"")
+            buildConfigField("String", "API_KEY", "\"${api_key}\"")
+            buildConfigField("int", "DB_VERION", "${db_version}")
+            buildConfigField("String", "DB_NAME", "\"${db_name}\"")
+            debuggable true
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            buildConfigField("String", "BASE_URL", "\"${api_endpoint}\"")
+            buildConfigField("String", "API_KEY", "\"${api_key}\"")
+            buildConfigField("int", "DB_VERION", "${db_version}")
+            buildConfigField("String", "DB_NAME", "\"${db_name}\"")
         }
     }
 
@@ -66,6 +84,7 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-moshi:$retrofitVersion"
     implementation "com.squareup.moshi:moshi:$moshiVersion"
     kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiVersion"
+    implementation "com.squareup.retrofit2:converter-gson:$okhttpGsonVersion"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttpInterceptorVersion"
     implementation("com.github.bumptech.glide:glide:$glid") {
         exclude group: "com.android.support"
@@ -79,5 +98,8 @@ dependencies {
     androidTestImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
     kaptAndroidTest "com.google.dagger:hilt-android-compiler:$hilt_version"
 
-
+    //room db
+    implementation "androidx.room:room-runtime:2.3.0"
+    kapt "androidx.room:room-compiler:2.3.0"
+    implementation 'androidx.room:room-ktx:2.3.0'
 }
