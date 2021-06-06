@@ -13,8 +13,7 @@ import kotlin.coroutines.CoroutineContext
 class DataRepository @Inject constructor(
     private val remoteRepository: RemoteData,
     private val ioDispatcher: CoroutineContext
-) :
-    DataRepositorySource {
+) : DataRepositorySource {
 
     override suspend fun requestCurrencies(): Flow<Resource<CurrenciesResponse>> {
         return flow {

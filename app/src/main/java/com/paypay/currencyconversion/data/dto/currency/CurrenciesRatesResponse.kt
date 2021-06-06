@@ -7,8 +7,8 @@ data class CurrenciesRatesResponse(
     var success: Boolean,
     @SerializedName("timestamp")
     var timestamp: Long,
-    @SerializedName("source")
-    var source: String,
     @SerializedName("quotes")
-    var quotes: Map<String, String> = HashMap()
+    var quotes: Map<String, Double> = HashMap(),
+    @SerializedName("error")
+    var error: Error? = null
 )

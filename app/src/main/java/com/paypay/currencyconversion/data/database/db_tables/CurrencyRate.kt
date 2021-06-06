@@ -15,7 +15,7 @@ import kotlinx.android.parcel.Parcelize
 
 @Entity(tableName = CURRENCY_RATES)
 @Parcelize
-class CurrencyRate(@PrimaryKey val currencyCode: String, val rate: Double?) : Parcelable {
+class CurrencyRate(@PrimaryKey val currencyCode: String, val rate: Double) : Parcelable {
     override fun toString(): String {
         return rate.toString()
     }

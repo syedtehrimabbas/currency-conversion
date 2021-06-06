@@ -2,14 +2,16 @@ package com.paypay.currencyconversion.data.remote
 
 import com.paypay.currencyconversion.BuildConfig.API_KEY
 import com.paypay.currencyconversion.data.Resource
+import com.paypay.currencyconversion.data.database.AppPreferences
 import com.paypay.currencyconversion.data.database.dao.CurrencyConversionDao
-import com.paypay.currencyconversion.data.database.db_tables.Currency
 import com.paypay.currencyconversion.data.dto.currency.CurrenciesRatesResponse
 import com.paypay.currencyconversion.data.dto.currency.CurrenciesResponse
 import com.paypay.currencyconversion.data.error.NETWORK_ERROR
 import com.paypay.currencyconversion.data.error.NO_INTERNET_CONNECTION
-import com.paypay.currencyconversion.data.remote.service.RecipesService
+import com.paypay.currencyconversion.data.remote.service.CurrencyLayerService
 import com.paypay.currencyconversion.utils.NetworkConnectivity
+import com.paypay.currencyconversion.utils.toCurrencyList
+import com.paypay.currencyconversion.utils.toRatesList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Response
@@ -18,70 +20,123 @@ import javax.inject.Inject
 
 class RemoteData @Inject
 constructor(
-    private val serviceGenerator: ServiceGenerator,
+    private val retrofitService: RetrofitService,
     private val networkConnectivity: NetworkConnectivity,
-    private val currencyConversionDao: CurrencyConversionDao
-) :
-    RemoteDataSource {
+    private val currencyConversionDao: CurrencyConversionDao,
+    private val preferences: AppPreferences
+) : RemoteDataSource {
     override suspend fun currencies(): Resource<CurrenciesResponse> {
-        val recipesService = serviceGenerator.createService(RecipesService::class.java)
+        val currenciesService = retrofitService.createService(CurrencyLayerService::class.java)
         val allCurrencies = currencyConversionDao.allCurrencies()
         return when {
             allCurrencies.isNotEmpty() -> {
                 val map = allCurrencies.associateBy({ it.code }, { it.currencyName })
-                Resource.Success(data = CurrenciesResponse(true, map as Map<String, String>))
+                Resource.Success(data = CurrenciesResponse(true, (map as Map<*, *>)))
             }
             else -> {
-                when (val response =
-                    processCall(recipesService.fetchCurrencies(API_KEY))) {
-                    is CurrenciesResponse -> {
-                        withContext(Dispatchers.IO) {
-                            currencyConversionDao.insertCurrencies(response.currencies.map {
-                                Currency(
-                                    it.key,
-                                    it.value
-                                )
-                            })
-                        }
 
-                        Resource.Success(data = response)
+                when {
+                    networkConnectivity.isConnected() -> {
+                        val response =
+                            processCall(currenciesService.fetchCurrencies(API_KEY))
+                        when (response) {
+                            is CurrenciesResponse -> {
+                                when (response.success) {
+                                    true -> {
+                                        withContext(Dispatchers.IO) {
+                                            val currenciesList =
+                                                response.currencies.toCurrencyList()
+                                            currencyConversionDao.insertCurrencies(currenciesList)
+                                        }
+                                        Resource.Success(data = response)
+                                    }
+                                    else -> {
+                                        Resource.DataError(
+                                            response.error?.code,
+                                            response.error?.info
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {
+                                Resource.DataError(response as Int)
+                            }
+                        }
                     }
                     else -> {
-                        Resource.DataError(errorCode = response as Int)
+                        Resource.DataError(
+                            NO_INTERNET_CONNECTION,
+                            "Please check your internet connection"
+                        )
                     }
                 }
             }
         }
-
-        /* return when (val response =
-             processCall(recipesService.fetchCurrencies(API_KEY))) {
-             is CurrenciesResponse -> {
-                 Resource.Success(data =response)
-             }
-             else -> {
-                 Resource.DataError(errorCode = response as Int)
-             }
-         }*/
     }
 
     override suspend fun rates(): Resource<CurrenciesRatesResponse> {
-        val recipesService = serviceGenerator.createService(RecipesService::class.java)
-
-        return when (val response =
-            processCall(recipesService.fetchRates(API_KEY))) {
-            is CurrenciesRatesResponse -> {
-                Resource.Success(data = response)
+        val rates = currencyConversionDao.allCurrencyRates()
+        return when {
+            (rates.isNotEmpty() && !preferences.liveDataRequired()) -> {
+                val map = rates.associateBy({ it.currencyCode }, { it.rate })
+                Resource.Success(
+                    data = CurrenciesRatesResponse(
+                        true,
+                        System.currentTimeMillis(),
+                        map
+                    )
+                )
             }
             else -> {
-                Resource.DataError(errorCode = response as Int)
+                return ratesAPI()
             }
+        }
+
+    }
+
+    override suspend fun ratesAPI(): Resource<CurrenciesRatesResponse> {
+        val ratesService = retrofitService.createService(CurrencyLayerService::class.java)
+        return when {
+            networkConnectivity.isConnected() -> {
+                val response = processCall(ratesService.fetchRates(API_KEY))
+                return when (response) {
+                    is CurrenciesRatesResponse -> {
+                        when (response.success) {
+                            true -> {
+                                withContext(Dispatchers.IO) {
+                                    val rates = response.quotes.toRatesList()
+                                    currencyConversionDao.insertRates(rates)
+                                    preferences.setPreferences(
+                                        AppPreferences.SYNC_TIME,
+                                        System.currentTimeMillis()
+                                    )
+                                }
+                                Resource.Success(data = response)
+
+                            }
+                            else -> {
+                                Resource.DataError(response.error?.code, response.error?.info)
+                            }
+                        }
+                    }
+                    else -> {
+                        Resource.DataError(response as Int)
+                    }
+                }
+
+            }
+            else -> {
+                Resource.DataError(
+                    NO_INTERNET_CONNECTION,
+                    "Please check your internet connection"
+                )
+            }
+
+
         }
     }
 
     private fun processCall(responseCall: Response<*>): Any? {
-        if (!networkConnectivity.isConnected()) {
-            return NO_INTERNET_CONNECTION
-        }
         return try {
             val responseCode = responseCall.code()
             if (responseCall.isSuccessful) {

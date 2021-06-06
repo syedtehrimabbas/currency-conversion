@@ -6,7 +6,7 @@ import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-interface RecipesService {
+interface CurrencyLayerService {
     @GET("list")
     suspend fun fetchCurrencies(
         @Query("access_key") accessKey: String

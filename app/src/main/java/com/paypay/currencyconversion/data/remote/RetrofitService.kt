@@ -17,7 +17,7 @@ private const val contentTypeValue = "application/json"
 private const val timeoutConnect = 30   //In seconds
 
 @Singleton
-class ServiceGenerator @Inject constructor() {
+class RetrofitService @Inject constructor() {
     private val okHttpBuilder: OkHttpClient.Builder = OkHttpClient.Builder()
     private val retrofit: Retrofit
 
@@ -25,9 +25,9 @@ class ServiceGenerator @Inject constructor() {
         val original = chain.request()
 
         val request = original.newBuilder()
-                .header(contentType, contentTypeValue)
-                .method(original.method, original.body)
-                .build()
+            .header(contentType, contentTypeValue)
+            .method(original.method, original.body)
+            .build()
 
         chain.proceed(request)
     }

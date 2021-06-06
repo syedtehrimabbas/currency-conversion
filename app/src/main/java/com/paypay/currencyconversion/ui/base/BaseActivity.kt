@@ -1,32 +1,45 @@
 package com.paypay.currencyconversion.ui.base
 
-import android.R
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatSpinner
+import androidx.databinding.DataBindingUtil
+import androidx.databinding.ViewDataBinding
+import androidx.lifecycle.LiveData
 import com.paypay.currencyconversion.data.Resource
 import com.paypay.currencyconversion.data.dto.currency.CurrenciesRatesResponse
 import com.paypay.currencyconversion.data.dto.currency.CurrenciesResponse
+import com.paypay.currencyconversion.utils.SingleEvent
 
 
-abstract class BaseActivity : AppCompatActivity() {
+abstract class BaseActivity<T : BaseViewModel> : AppCompatActivity() {
 
     abstract fun observeViewModel()
-    protected abstract fun initViewBinding()
-    protected abstract fun handleRates(status: Resource<CurrenciesRatesResponse>)
-    protected abstract fun handleRecipesList(status: Resource<CurrenciesResponse>)
+    protected abstract fun init()
+    protected abstract fun getResLayoutRes(): Int
+    protected abstract fun getVariableId(): Int
+    protected abstract fun handleRates(ratesResponse: Resource<CurrenciesRatesResponse>)
+    protected abstract fun handleCurrency(currencyResponse: Resource<CurrenciesResponse>)
+    protected abstract fun observeSnackBarMessages(event: LiveData<SingleEvent<Any>>)
+    lateinit var binding: ViewDataBinding
+    protected abstract val viewModel: T
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initViewBinding()
+        init()
         observeViewModel()
     }
 
-    fun setSpinnerItems(spinner: AppCompatSpinner, list: List<String>) {
-        val adapter: ArrayAdapter<String> =
-            ArrayAdapter<String>(baseContext, R.layout.simple_spinner_item,list)
-        adapter.setDropDownViewResource(R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
+    private fun initViewBinding() {
+        binding =
+            DataBindingUtil.inflate(
+                layoutInflater,
+                getResLayoutRes(),
+                null,
+                false
+            )
+        binding.setVariable(getVariableId(), viewModel)
+        setContentView(binding.root)
     }
 
 }
